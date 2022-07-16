@@ -1,4 +1,5 @@
 import os
+import re
 from slugify import slugify
 import xml.etree.ElementTree as ET
 from nltk.tokenize import sent_tokenize
@@ -23,14 +24,6 @@ def get_document_metadata(path):
 def generate_document_slug(title):
     slug = slugify(title)
     num_existing_slug = len(Document.objects.filter(slug__startswith=slug))
-    if num_existing_slug == 0:
-        return slug
-    return f"{slug}{num_existing_slug+1}"
-
-
-def generate_author_slug(author):
-    slug = slugify(author)
-    num_existing_slug = len(Author.objects.filter(slug__startswith=slug))
     if num_existing_slug == 0:
         return slug
     return f"{slug}{num_existing_slug+1}"
@@ -65,6 +58,9 @@ class Command(BaseCommand):
                     continue
 
                 filename, _ = os.path.splitext(os.path.basename(file))
+                file_number = re.search(r"\d+", filename)
+                file_number = file_number and int(file_number.group())
+
                 with open(os.path.join(dirpath, f"{filename}.txt")) as f:
                     text = f.read()
 
@@ -77,6 +73,7 @@ class Command(BaseCommand):
                 document_model = Document.objects.create(
                     title=title,
                     slug=generate_document_slug(title),
+                    doc_num=file_number,
                     type="source",
                     language=language,
                     raw_text=text,
@@ -85,7 +82,7 @@ class Command(BaseCommand):
                 if authors:
                     for author in authors.split(","):
                         author_model, _ = Author.objects.get_or_create(
-                            name=author, slug=generate_author_slug(author)
+                            name=author, slug=slugify(author)
                         )
                         author_model.document.add(document_model)
 

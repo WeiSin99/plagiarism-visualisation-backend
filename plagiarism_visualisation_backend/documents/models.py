@@ -9,6 +9,7 @@ class Document(models.Model):
 
     title = models.CharField(max_length=1000)
     slug = models.SlugField(max_length=1000, unique=True)
+    doc_num = models.IntegerField()
     type = models.CharField(max_length=15, choices=DOCUMENT_TYPE)
     language = models.CharField(max_length=15)
     raw_text = models.TextField()
