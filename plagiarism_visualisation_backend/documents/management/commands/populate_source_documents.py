@@ -91,6 +91,8 @@ class Command(BaseCommand):
 
                 sentences = sent_tokenize(text)
                 for i, sentence in enumerate(sentences):
-                    Sentence.objects.create(raw_text=sentence, document=document_model)
+                    Sentence.objects.create(
+                        raw_text=sentence, document=document_model, number=i
+                    )
 
                 self.stdout.write(f"Written {filename}")
