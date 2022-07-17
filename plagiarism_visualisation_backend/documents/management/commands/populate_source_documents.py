@@ -42,8 +42,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        Document.objects.all().delete()
-        Author.objects.all().delete()
+        # Document.objects.all().delete()
+        # Author.objects.all().delete()
 
         curpath = os.path.dirname(__file__)
         source_path = os.path.join(curpath, options["path"])
@@ -60,11 +60,13 @@ class Command(BaseCommand):
                 filename, _ = os.path.splitext(os.path.basename(file))
                 file_number = re.search(r"\d+", filename)
                 file_number = file_number and int(file_number.group())
+                if file_number == 9471:
+                    continue
 
                 with open(os.path.join(dirpath, f"{filename}.txt")) as f:
                     text = f.read()
 
-                title, authors, language = get_document_metadata(
+                title, _, language = get_document_metadata(
                     os.path.join(dirpath, f"{filename}.xml")
                 )
                 title = title or filename
@@ -79,12 +81,12 @@ class Command(BaseCommand):
                     raw_text=text,
                 )
 
-                if authors:
-                    for author in authors.split(","):
-                        author_model, _ = Author.objects.get_or_create(
-                            name=author, slug=slugify(author)
-                        )
-                        author_model.document.add(document_model)
+                # if authors:
+                #     for author in authors.split(","):
+                #         author_model, _ = Author.objects.get_or_create(
+                #             name=author, slug=slugify(author)
+                #         )
+                #         author_model.document.add(document_model)
 
                 sentences = sent_tokenize(text)
                 for i, sentence in enumerate(sentences):
