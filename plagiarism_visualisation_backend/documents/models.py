@@ -26,6 +26,7 @@ class Sentence(models.Model):
         Document, on_delete=models.CASCADE, related_name="sentences"
     )
     raw_text = models.TextField()
+    preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField()
 
     def __str__(self):
@@ -63,6 +64,7 @@ class SuspiciousSentence(models.Model):
         SuspiciousDocument, on_delete=models.CASCADE, related_name="sentences"
     )
     raw_text = models.TextField()
+    preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField()
 
     def __str__(self):
