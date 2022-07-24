@@ -32,10 +32,14 @@ class Command(BaseCommand):
         #         sentence.raw_text = sentence.raw_text[1:]
         #         sentence.save()
 
-        for i in range(501, 2000):
+        for i in range(10000, 11094):
             sentences = SuspiciousSentence.objects.filter(document__doc_num=i)
             for sentence in sentences:
-                word_token = word_tokenize(sentence.raw_text)
+                raw_text = sentence.raw_text
+                if raw_text.startswith("\ufeff"):
+                    raw_text = raw_text[1:]
+                    sentence.raw_text = raw_text
+                word_token = word_tokenize(raw_text.lower())
                 lemmatizer = WordNetLemmatizer()
 
                 processed_token = []
