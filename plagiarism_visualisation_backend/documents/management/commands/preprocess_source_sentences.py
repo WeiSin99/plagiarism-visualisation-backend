@@ -35,7 +35,11 @@ class Command(BaseCommand):
         for i in range(9472, 11094):
             sentences = Sentence.objects.filter(document__doc_num=i)
             for sentence in sentences:
-                word_token = word_tokenize(sentence.raw_text.lower())
+                raw_text = sentence.raw_text
+                if raw_text.startswith("\ufeff"):
+                    raw_text = raw_text[1:]
+                    sentence.raw_text = raw_text
+                word_token = word_tokenize(raw_text.lower())
                 lemmatizer = WordNetLemmatizer()
 
                 processed_token = []

@@ -4,7 +4,7 @@ from slugify import slugify
 import xml.etree.ElementTree as ET
 from nltk.tokenize import sent_tokenize
 
-from documents.models import Document, Sentence, Author
+from documents.models import Document, Sentence
 
 from django.core.management.base import BaseCommand
 
@@ -42,9 +42,6 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        # Document.objects.all().delete()
-        # Author.objects.all().delete()
-
         curpath = os.path.dirname(__file__)
         source_path = os.path.join(curpath, options["path"])
 

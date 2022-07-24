@@ -50,9 +50,6 @@ class Command(BaseCommand):
             if dirpath == source_path:
                 continue
 
-            if os.path.basename(dirpath) != "part23":
-                continue
-
             for file in files:
                 if file == ".DS_Store" or file.endswith(".xml"):
                     continue
