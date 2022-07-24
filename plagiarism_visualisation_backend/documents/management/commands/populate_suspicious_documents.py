@@ -50,7 +50,7 @@ class Command(BaseCommand):
             if dirpath == source_path:
                 continue
 
-            if os.path.basename(dirpath) != "part5":
+            if os.path.basename(dirpath) != "part23":
                 continue
 
             for file in files:

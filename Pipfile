@@ -8,6 +8,10 @@ django = "*"
 psycopg2 = "*"
 python-slugify = "*"
 nltk = "*"
+fasttext = "*"
+numpy = "*"
+scikit-learn = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 mypy = "*"

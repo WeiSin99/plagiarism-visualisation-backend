@@ -14,6 +14,12 @@ class Document(models.Model):
     language = models.CharField(max_length=15)
     raw_text = models.TextField()
 
+    def serialize(self):
+        return {
+            "title": self.title,
+            "doc-num": self.doc_num,
+        }
+
     class Meta:
         ordering = ["-doc_num"]
 
@@ -28,6 +34,12 @@ class Sentence(models.Model):
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField()
+
+    def serialize(self):
+        return {
+            "raw-text": self.raw_text,
+            "preprocessed-text": self.preprocessed_text,
+        }
 
     def __str__(self):
         return self.raw_text
@@ -52,6 +64,12 @@ class SuspiciousDocument(models.Model):
     language = models.CharField(max_length=15)
     raw_text = models.TextField()
 
+    def serialize(self):
+        return {
+            "title": self.title,
+            "doc-num": self.doc_num,
+        }
+
     class Meta:
         ordering = ["-doc_num"]
 
@@ -66,6 +84,12 @@ class SuspiciousSentence(models.Model):
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField()
+
+    def serialize(self):
+        return {
+            "raw-text": self.raw_text,
+            "preprocessed-text": self.preprocessed_text,
+        }
 
     def __str__(self):
         return self.raw_text
