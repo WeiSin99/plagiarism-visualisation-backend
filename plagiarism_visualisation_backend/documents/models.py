@@ -33,11 +33,13 @@ class Sentence(models.Model):
     )
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
-    number = models.IntegerField()
+    number = models.IntegerField(db_index=True)
+    fasttext_vector = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
-            "raw-text": self.raw_text,
+            "number": self.number,
+            "rawText": self.raw_text,
             "preprocessed-text": self.preprocessed_text,
         }
 
@@ -83,11 +85,13 @@ class SuspiciousSentence(models.Model):
     )
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
-    number = models.IntegerField()
+    number = models.IntegerField(db_index=True)
+    fasttext_vector = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
-            "raw-text": self.raw_text,
+            "number": self.number,
+            "rawText": self.raw_text,
             "preprocessed-text": self.preprocessed_text,
         }
 
