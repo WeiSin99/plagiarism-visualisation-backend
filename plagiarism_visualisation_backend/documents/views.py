@@ -1,193 +1,232 @@
-import os
-import pickle
-import fasttext
+import json
 import numpy as np
+from nltk.tokenize import sent_tokenize
 from sklearn.metrics.pairwise import cosine_similarity
 
 from django.http import JsonResponse
+
 from .models import Document, SuspiciousDocument
+from .utils import (
+    assign_sentence_number,
+    merge_cases,
+    within_range,
+    case_within_range,
+    overlapped_range,
+)
 
 
-def merge_sentences(arr, window=2):
-    if len(arr) < 2:
-        return [arr.copy()], [[]]
+def suspicious_document_detail(request, filenum):
+    response = {}
+    if request.method == "GET":
+        suspicious_document = SuspiciousDocument.objects.get(doc_num=filenum)
+        db_sentences = [
+            sentence.serialize() for sentence in suspicious_document.sentences.all()
+        ]
 
-    start = 0
-    end = 1
-    merge_arr = []
-    merge_at = []
-    while end < len(arr):
-        if arr[end] - arr[end - 1] <= window and end != len(arr) - 1:
-            end = end + 1
-            continue
+        document_raw_text = suspicious_document.raw_text
+        if document_raw_text.startswith("\ufeff"):
+            document_raw_text = document_raw_text[1:]
+        paragraphs = document_raw_text.split("\n\n")
+        splitted_paragraphs = [sent_tokenize(paragraph) for paragraph in paragraphs]
 
-        if end == len(arr) - 1:
-            if arr[end] - arr[end - 1] <= window:
-                merge_at.append([start, end + 1])
-                merge_arr.append(arr[start : end + 1])
-            else:
-                merge_at.append([start, end])
-                merge_arr.append(arr[start:end])
-                merge_at.append([end, end + 1])
-                merge_arr.append(arr[end : end + 1])
-        else:
-            merge_at.append([start, end])
-            merge_arr.append(arr[start:end])
-            start = end
+        processed_paragraphs = assign_sentence_number(
+            splitted_paragraphs, db_sentences, "suspicious", filenum
+        )
 
-        end = end + 1
-    return merge_arr, merge_at
+        response = suspicious_document.serialize()
+        response["sentenceLength"] = db_sentences[-1]["number"]
+        response["processedLength"] = processed_paragraphs[-2][-1]["number"]
+        response["processedParagraphs"] = processed_paragraphs
+
+    return JsonResponse(response)
 
 
-def merge_suspicious_sentences(arr, window=2):
-    if len(arr) < 2:
-        return [arr.copy()], [[]]
+def source_document_detail(request, filenum):
+    response = {}
+    if request.method == "GET":
+        suspicious_document = Document.objects.get(doc_num=filenum)
+        db_sentences = [
+            sentence.serialize() for sentence in suspicious_document.sentences.all()
+        ]
 
-    start = 0
-    end = 1
-    merge_arr = []
-    merge_at = []
-    while end < len(arr):
-        if (
-            arr[end]["number"] - arr[end - 1]["number"] <= window
-            and end != len(arr) - 1
-        ):
-            end = end + 1
-            continue
+        document_raw_text = suspicious_document.raw_text
+        if document_raw_text.startswith("\ufeff"):
+            document_raw_text = document_raw_text[1:]
+        paragraphs = document_raw_text.split("\n\n")
+        splitted_paragraphs = [sent_tokenize(paragraph) for paragraph in paragraphs]
 
-        if end == len(arr) - 1:
-            if arr[end]["number"] - arr[end - 1]["number"] <= window:
-                merge_at.append([start, end + 1])
-                merge_arr.append(arr[start : end + 1])
-            else:
-                merge_at.append([start, end])
-                merge_arr.append(arr[start:end])
-                merge_at.append([end, end + 1])
-                merge_arr.append(arr[end : end + 1])
-        else:
-            merge_at.append([start, end])
-            merge_arr.append(arr[start:end])
-            start = end
+        processed_paragraphs = assign_sentence_number(
+            splitted_paragraphs, db_sentences, "source", filenum
+        )
 
-        end = end + 1
-    return merge_arr, merge_at
+        response = suspicious_document.serialize()
+        response["sentenceLength"] = db_sentences[-1]["number"]
+        response["processedLength"] = processed_paragraphs[-2][-1]["number"]
+        response["processedParagraphs"] = processed_paragraphs
+
+    return JsonResponse(response)
 
 
 # Create your views here.
 def detail_analysis(request, filenum):
     """Detail analysis of a suspicious document"""
     response = {}
+
     if request.method == "GET":
-        curpath = os.path.dirname(__file__)
-        # model = fasttext.load_model(os.path.join(curpath, "wiki.en.bin"))
-        #
+        # # get suspicious document
         suspicious_document = SuspiciousDocument.objects.get(doc_num=filenum)
-        # suspicious_raw_sentences = [
-        #     sentence.raw_text for sentence in suspicious_document.sentences.all()
+        # suspicious_sentences = suspicious_document.sentences.all()
+        # suspicious_sent_vectors = [
+        #     json.loads(sentence.fasttext_vector) for sentence in suspicious_sentences
         # ]
-        # suspicious_sentences = [
-        #     sentence.preprocessed_text
-        #     for sentence in suspicious_document.sentences.all()
-        # ]
-        # suspicious_sent_vectors = []
-        # for sentence in suspicious_sentences:
-        #     sent_vector = np.zeros(shape=(300,))
-        #     words = sentence.split(",")
-        #     sentence_length = len(words)
         #
-        #     for word in words:
-        #         sent_vector = np.add(sent_vector, model.get_word_vector(word))
+        # for i in range(5000, 6000):
+        #     # get source documents
+        #     source_document = Document.objects.get(doc_num=i)
+        #     source_sentences = source_document.sentences.all()
+        #     # source_sentences = filter(
+        #     #     lambda s: len(s.preprocessed_text.split(",")) > 2, source_sentences
+        #     # )
+        #     source_sent_vectors = [
+        #         json.loads(sentence.fasttext_vector) for sentence in source_sentences
+        #     ]
         #
-        #     suspicious_sent_vectors.append(sent_vector / sentence_length)
-
-        source_document = Document.objects.get(doc_num=5693)
-        # source_raw_sentences = [
-        #     sentence.raw_text for sentence in source_document.sentences.all()
-        # ]
-        # source_sentences = [
-        #     sentence.preprocessed_text for sentence in source_document.sentences.all()
-        # ]
-        # source_sent_vectors = []
-        # for sentence in source_sentences:
-        #     sent_vector = np.zeros(shape=(300,))
-        #     words = sentence.split(",")
-        #     sentence_length = len(words)
+        #     # calculate cosine similarities between all suspicious and source sentences
+        #     cosine_similarities = cosine_similarity(
+        #         suspicious_sent_vectors, source_sent_vectors
+        #     )
         #
-        #     for word in words:
-        #         sent_vector = np.add(sent_vector, model.get_word_vector(word))
+        #     # get sentences pair with the highest similarity score higher than 0.96
+        #     potential_plagiarised_sents = []
+        #     top_n = 5
+        #     for sus_sentence_num, similarity in enumerate(cosine_similarities):
+        #         top_similar_sentence = np.argsort(similarity)[::-1][:top_n]
+        #         for source_sentence_num in top_similar_sentence:
+        #             if similarity[source_sentence_num] > 0.975:
+        #                 potential_plagiarised_sents.append(
+        #                     {
+        #                         "filenum": i,
+        #                         "suspicious_sentence_number": sus_sentence_num,
+        #                         "source_sentence_number": int(source_sentence_num),
+        #                         "score": similarity[source_sentence_num],
+        #                     }
+        #                 )
         #
-        #     source_sent_vectors.append(sent_vector / sentence_length)
+        #     potential_cases.append(
+        #         merge_cases(filenum, potential_plagiarised_sents, window=3)
+        #     )
         #
-        # cosine_similarities = cosine_similarity(
-        #     suspicious_sent_vectors, source_sent_vectors
-        # )
-        # with open(os.path.join(curpath, "cosine_similarities.pickle"), "wb") as file:
-        #     pickle.dump(cosine_similarities, file)
+        # potential_cases = list(filter(lambda c: len(c) > 0, potential_cases))
+        # with open("result.json", "w") as f:
+        #     json.dump({"detectedCases": potential_cases}, f)
 
-        with open(os.path.join(curpath, "cosine_similarities.pickle"), "rb") as file:
-            cosine_similarities = pickle.load(file)
+        # response = suspicious_document.serialize()
 
-        top_n = 5
-        detected_suspicious_sentences = []
-        detected_source_sentences = []
-        for idx, similarity in enumerate(cosine_similarities):
-            top_indices = np.argsort(similarity)[::-1][:top_n]
-            for index in top_indices:
-                if similarity[index] > 0.95:
-                    detected_suspicious_sentences.append(idx)
-                    s = {"number": int(index)}
-                    s["score"] = similarity[index]
-                    detected_source_sentences.append(s)
+        with open("result.json", "r") as f:
+            potential_cases = json.load(f)
 
-        merged_suspicious_sentences, merge_at = merge_sentences(
-            detected_suspicious_sentences
-        )
-        merged_source_sentences = []
-        for idxs in merge_at:
-            merged_source_sentences.append(detected_source_sentences[idxs[0] : idxs[1]])
+        potential_cases = [
+            case for file_case in potential_cases["detectedCases"] for case in file_case
+        ]
 
-        merged_merged = []
-        for sentence in merged_source_sentences:
-            s = sorted(sentence, key=lambda x: x["number"])
-            merg, _ = merge_suspicious_sentences(s)
-            merged_merged.append(merg)
+        merged_cases = []
+        for case in potential_cases:
+            within_case = within_range(case, merged_cases)
+            case_within_case = case_within_range(case, merged_cases)
+            overlapped_case, overlapped_part = overlapped_range(case, merged_cases)
+            if within_case >= 0:
+                merged_cases[within_case]["sources"].append(
+                    {
+                        "filenum": case["filenum"],
+                        "sourceStart": case["sourceStart"],
+                        "sourceEnd": case["sourceEnd"],
+                        "sourceLength": case["sourceLength"],
+                        "sourceNumWords": case["sourceNumWords"],
+                        "averageScore": case["averageScore"],
+                    }
+                )
+            elif case_within_case >= 0:
+                merged_cases[case_within_case]["thisStart"] = case["thisStart"]
+                merged_cases[case_within_case]["thisEnd"] = case["thisEnd"]
+                merged_cases[case_within_case]["thisLength"] = case["thisLength"]
+                merged_cases[case_within_case]["thisNumWords"] = case["thisNumWords"]
+                merged_cases[case_within_case]["sources"].append(
+                    {
+                        "filenum": case["filenum"],
+                        "sourceStart": case["sourceStart"],
+                        "sourceEnd": case["sourceEnd"],
+                        "sourceLength": case["sourceLength"],
+                        "sourceNumWords": case["sourceNumWords"],
+                        "averageScore": case["averageScore"],
+                    }
+                )
+            elif overlapped_case >= 0:
+                for part in overlapped_part:
+                    merged_cases[overlapped_case]["overlappedSentence"].append(part)
+
+                merged_cases.append(
+                    {
+                        "thisStart": case["thisStart"],
+                        "thisEnd": case["thisEnd"],
+                        "thisLength": case["thisLength"],
+                        "thisNumWords": case["thisNumWords"],
+                        "overlappedSentence": overlapped_part,
+                        "sources": [
+                            {
+                                "filenum": case["filenum"],
+                                "sourceStart": case["sourceStart"],
+                                "sourceEnd": case["sourceEnd"],
+                                "sourceLength": case["sourceLength"],
+                                "sourceNumWords": case["sourceNumWords"],
+                                "averageScore": case["averageScore"],
+                            }
+                        ],
+                    }
+                )
+            else:
+                merged_cases.append(
+                    {
+                        "thisStart": case["thisStart"],
+                        "thisEnd": case["thisEnd"],
+                        "thisLength": case["thisLength"],
+                        "thisNumWords": case["thisNumWords"],
+                        "overlappedSentence": [],
+                        "sources": [
+                            {
+                                "filenum": case["filenum"],
+                                "sourceStart": case["sourceStart"],
+                                "sourceEnd": case["sourceEnd"],
+                                "sourceLength": case["sourceLength"],
+                                "sourceNumWords": case["sourceNumWords"],
+                                "averageScore": case["averageScore"],
+                            }
+                        ],
+                    }
+                )
+
+        merged_cases = sorted(merged_cases, key=lambda x: x["thisStart"])
+
+        processed_merged_cases = []
+        for merged_case in merged_cases:
+            if merged_case["thisNumWords"] <= 2:
+                continue
+
+            processed_merged_case = merged_case
+            sources = list(
+                filter(
+                    lambda c: abs(merged_case["thisNumWords"] - c["sourceNumWords"])
+                    <= 25
+                    and c["sourceNumWords"] > 2,
+                    merged_case["sources"],
+                )
+            )
+            processed_merged_case["sources"] = sorted(
+                sources, key=lambda s: s["averageScore"]
+            )
+            if len(processed_merged_case["sources"]) > 0:
+                processed_merged_cases.append(processed_merged_case)
 
         response = suspicious_document.serialize()
-        response["potential-case"] = []
-        for idx, merged in enumerate(merged_suspicious_sentences):
-            sentences = suspicious_document.sentences.filter(
-                number__gte=min(merged), number__lte=max(merged)
-            )
-            concanated_sentence = ""
-            for sentence in sentences:
-                concanated_sentence += f" {sentence.raw_text}"
-            response["potential-case"].append({"sentence": concanated_sentence})
-
-        for idx, merged in enumerate(merged_merged):
-            response["potential-case"][idx]["source"] = []
-            for mm in merged:
-                sentences = source_document.sentences.filter(
-                    number__gte=min(mm, key=lambda x: x["number"])["number"],
-                    number__lte=max(mm, key=lambda x: x["number"])["number"],
-                )
-                r = {}
-                r["filenum"] = 5693
-                concanated_sentence = ""
-                for sentence in sentences:
-                    concanated_sentence += f" {sentence.raw_text}"
-                r["sentence"] = concanated_sentence
-
-                total_score = 0
-                for m in mm:
-                    total_score = total_score + m["score"]
-                average_score = total_score / len(mm)
-                r["average-score"] = average_score
-
-                response["potential-case"][idx]["source"].append(r)
-
-        # response = {
-        #     "suspicious_sentences": merged_suspicious_sentences,
-        #     "source_sentences": merged_merged,
-        # }
+        response["detectedCases"] = processed_merged_cases
 
     return JsonResponse(response)
