@@ -8,44 +8,11 @@ from django.http import JsonResponse
 from .models import Document, SuspiciousDocument
 from .utils import (
     assign_sentence_number,
-    merge_sentences,
-    merge_source_sentences,
     merge_cases,
+    within_range,
+    case_within_range,
+    overlapped_range,
 )
-
-
-def within_range(case, merged_cases):
-    for i, merged_case in enumerate(merged_cases):
-        if (
-            case["thisStart"] >= merged_case["thisStart"]
-            and case["thisEnd"] <= merged_case["thisEnd"]
-        ):
-            return i
-
-    return -1
-
-
-def case_within_range(case, merged_cases):
-    for i, merged_case in enumerate(merged_cases):
-        if (
-            merged_case["thisStart"] >= case["thisStart"]
-            and merged_case["thisEnd"] <= case["thisEnd"]
-        ):
-            return i
-
-    return -1
-
-
-def overlapped_range(case, merged_cases):
-    for i, merged_case in enumerate(merged_cases):
-        intersection = range(
-            max(case["thisStart"], merged_case["thisStart"]),
-            min(case["thisEnd"], merged_case["thisEnd"]) + 1,
-        )
-        if len(intersection) > 0:
-            return i, list(intersection)
-
-    return -1, []
 
 
 def suspicious_document_detail(request, filenum):
@@ -104,13 +71,10 @@ def source_document_detail(request, filenum):
 def detail_analysis(request, filenum):
     """Detail analysis of a suspicious document"""
     response = {}
-    potential_cases = []
-    merged_cases = []
-    processed_merged_cases = []
 
     if request.method == "GET":
         # # get suspicious document
-        # suspicious_document = SuspiciousDocument.objects.get(doc_num=filenum)
+        suspicious_document = SuspiciousDocument.objects.get(doc_num=filenum)
         # suspicious_sentences = suspicious_document.sentences.all()
         # suspicious_sent_vectors = [
         #     json.loads(sentence.fasttext_vector) for sentence in suspicious_sentences
@@ -262,4 +226,7 @@ def detail_analysis(request, filenum):
             if len(processed_merged_case["sources"]) > 0:
                 processed_merged_cases.append(processed_merged_case)
 
-    return JsonResponse({"detectedCases": processed_merged_cases})
+        response = suspicious_document.serialize()
+        response["detectedCases"] = processed_merged_cases
+
+    return JsonResponse(response)

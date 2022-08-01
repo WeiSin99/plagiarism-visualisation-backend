@@ -177,3 +177,37 @@ def merge_cases(sus_doc_num, potential_plagiarised_sents, window=2):
             )
 
     return merged_cases
+
+
+def within_range(case, merged_cases):
+    for i, merged_case in enumerate(merged_cases):
+        if (
+            case["thisStart"] >= merged_case["thisStart"]
+            and case["thisEnd"] <= merged_case["thisEnd"]
+        ):
+            return i
+
+    return -1
+
+
+def case_within_range(case, merged_cases):
+    for i, merged_case in enumerate(merged_cases):
+        if (
+            merged_case["thisStart"] >= case["thisStart"]
+            and merged_case["thisEnd"] <= case["thisEnd"]
+        ):
+            return i
+
+    return -1
+
+
+def overlapped_range(case, merged_cases):
+    for i, merged_case in enumerate(merged_cases):
+        intersection = range(
+            max(case["thisStart"], merged_case["thisStart"]),
+            min(case["thisEnd"], merged_case["thisEnd"]) + 1,
+        )
+        if len(intersection) > 0:
+            return i, list(intersection)
+
+    return -1, []
