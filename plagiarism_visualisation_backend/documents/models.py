@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 
 class Document(models.Model):
@@ -34,7 +35,6 @@ class Sentence(models.Model):
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField(db_index=True)
-    fasttext_vector = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
@@ -86,7 +86,6 @@ class SuspiciousSentence(models.Model):
     raw_text = models.TextField()
     preprocessed_text = models.TextField(null=True, blank=True)
     number = models.IntegerField(db_index=True)
-    fasttext_vector = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
