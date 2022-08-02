@@ -71,25 +71,23 @@ def source_document_detail(request, filenum):
 def detail_analysis(request, filenum):
     """Detail analysis of a suspicious document"""
     response = {}
+    potential_cases = []
 
     if request.method == "GET":
-        # # get suspicious document
+        # get suspicious document
         suspicious_document = SuspiciousDocument.objects.get(doc_num=filenum)
-        # suspicious_sentences = suspicious_document.sentences.all()
-        # suspicious_sent_vectors = [
-        #     json.loads(sentence.fasttext_vector) for sentence in suspicious_sentences
-        # ]
+        # with open(
+        #     f"/Volumes/WeiSin/suspicious-sent-vectors/suspicious-document{filenum}.json",
+        #     "r",
+        # ) as f:
+        #     suspicious_sent_vectors = json.load(f)
         #
         # for i in range(5000, 6000):
         #     # get source documents
-        #     source_document = Document.objects.get(doc_num=i)
-        #     source_sentences = source_document.sentences.all()
-        #     # source_sentences = filter(
-        #     #     lambda s: len(s.preprocessed_text.split(",")) > 2, source_sentences
-        #     # )
-        #     source_sent_vectors = [
-        #         json.loads(sentence.fasttext_vector) for sentence in source_sentences
-        #     ]
+        #     with open(
+        #         f"/Volumes/WeiSin/source-sent-vectors/source-document{i}.json", "r"
+        #     ) as f:
+        #         source_sent_vectors = json.load(f)
         #
         #     # calculate cosine similarities between all suspicious and source sentences
         #     cosine_similarities = cosine_similarity(
@@ -120,7 +118,7 @@ def detail_analysis(request, filenum):
         # with open("result.json", "w") as f:
         #     json.dump({"detectedCases": potential_cases}, f)
 
-        # response = suspicious_document.serialize()
+        response = suspicious_document.serialize()
 
         with open("result.json", "r") as f:
             potential_cases = json.load(f)
