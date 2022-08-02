@@ -63,7 +63,7 @@ class Command(BaseCommand):
                 with open(os.path.join(dirpath, f"{filename}.txt")) as f:
                     text = f.read()
 
-                title, _, language = get_document_metadata(
+                title, authors, language = get_document_metadata(
                     os.path.join(dirpath, f"{filename}.xml")
                 )
                 title = title or filename
@@ -75,15 +75,9 @@ class Command(BaseCommand):
                     doc_num=file_number,
                     type="source",
                     language=language,
+                    authors=authors,
                     raw_text=text,
                 )
-
-                # if authors:
-                #     for author in authors.split(","):
-                #         author_model, _ = Author.objects.get_or_create(
-                #             name=author, slug=slugify(author)
-                #         )
-                #         author_model.document.add(document_model)
 
                 sentences = sent_tokenize(text)
                 for i, sentence in enumerate(sentences):
