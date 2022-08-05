@@ -67,7 +67,6 @@ def source_document_detail(request, filenum):
     return JsonResponse(response)
 
 
-# Create your views here.
 def detail_analysis(request, filenum):
     """Detail analysis of a suspicious document"""
     response = {}
@@ -132,32 +131,23 @@ def detail_analysis(request, filenum):
             within_case = within_range(case, merged_cases)
             case_within_case = case_within_range(case, merged_cases)
             overlapped_case, overlapped_part = overlapped_range(case, merged_cases)
+            case_profile = {
+                "filenum": case["filenum"],
+                "sourceStart": case["sourceStart"],
+                "sourceEnd": case["sourceEnd"],
+                "sourceLength": case["sourceLength"],
+                "sourceNumWords": case["sourceNumWords"],
+                "averageScore": case["averageScore"],
+            }
+
             if within_case >= 0:
-                merged_cases[within_case]["sources"].append(
-                    {
-                        "filenum": case["filenum"],
-                        "sourceStart": case["sourceStart"],
-                        "sourceEnd": case["sourceEnd"],
-                        "sourceLength": case["sourceLength"],
-                        "sourceNumWords": case["sourceNumWords"],
-                        "averageScore": case["averageScore"],
-                    }
-                )
+                merged_cases[within_case]["sources"].append(case_profile)
             elif case_within_case >= 0:
                 merged_cases[case_within_case]["thisStart"] = case["thisStart"]
                 merged_cases[case_within_case]["thisEnd"] = case["thisEnd"]
                 merged_cases[case_within_case]["thisLength"] = case["thisLength"]
                 merged_cases[case_within_case]["thisNumWords"] = case["thisNumWords"]
-                merged_cases[case_within_case]["sources"].append(
-                    {
-                        "filenum": case["filenum"],
-                        "sourceStart": case["sourceStart"],
-                        "sourceEnd": case["sourceEnd"],
-                        "sourceLength": case["sourceLength"],
-                        "sourceNumWords": case["sourceNumWords"],
-                        "averageScore": case["averageScore"],
-                    }
-                )
+                merged_cases[case_within_case]["sources"].append(case_profile)
             elif overlapped_case >= 0:
                 for part in overlapped_part:
                     merged_cases[overlapped_case]["overlappedSentence"].append(part)
@@ -169,16 +159,7 @@ def detail_analysis(request, filenum):
                         "thisLength": case["thisLength"],
                         "thisNumWords": case["thisNumWords"],
                         "overlappedSentence": overlapped_part,
-                        "sources": [
-                            {
-                                "filenum": case["filenum"],
-                                "sourceStart": case["sourceStart"],
-                                "sourceEnd": case["sourceEnd"],
-                                "sourceLength": case["sourceLength"],
-                                "sourceNumWords": case["sourceNumWords"],
-                                "averageScore": case["averageScore"],
-                            }
-                        ],
+                        "sources": [case_profile],
                     }
                 )
             else:
@@ -189,16 +170,7 @@ def detail_analysis(request, filenum):
                         "thisLength": case["thisLength"],
                         "thisNumWords": case["thisNumWords"],
                         "overlappedSentence": [],
-                        "sources": [
-                            {
-                                "filenum": case["filenum"],
-                                "sourceStart": case["sourceStart"],
-                                "sourceEnd": case["sourceEnd"],
-                                "sourceLength": case["sourceLength"],
-                                "sourceNumWords": case["sourceNumWords"],
-                                "averageScore": case["averageScore"],
-                            }
-                        ],
+                        "sources": [case_profile],
                     }
                 )
 

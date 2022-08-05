@@ -4,7 +4,7 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from nltk import pos_tag
 
-from documents.models import SuspiciousSentence
+from documents.models import Sentence, SuspiciousSentence
 
 from django.core.management.base import BaseCommand
 
@@ -23,7 +23,15 @@ def get_wordnet_pos(word):
 
 
 class Command(BaseCommand):
-    help = "Preprocess source sentences"
+    help = "Preprocess sentences"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "type",
+            type=str,
+            choices=["source", "suspicious"],
+            help="Type of documents to be preprocessed.",
+        )
 
     def handle(self, *args, **options):
         # sentences = Sentence.objects.filter(number=0)
@@ -32,8 +40,11 @@ class Command(BaseCommand):
         #         sentence.raw_text = sentence.raw_text[1:]
         #         sentence.save()
 
-        for i in range(10000, 11094):
-            sentences = SuspiciousSentence.objects.filter(document__doc_num=i)
+        for i in range(1, 11094):
+            sentences = Sentence.objects.filter(document__doc_num=i)
+            if options["type"] == "suspicious":
+                sentences = SuspiciousSentence.objects.filter(document__doc_num=i)
+
             for sentence in sentences:
                 raw_text = sentence.raw_text
                 if raw_text.startswith("\ufeff"):

@@ -12,6 +12,9 @@ fasttext = "*"
 numpy = "*"
 scikit-learn = "*"
 django-cors-headers = "*"
+rake-nltk = "*"
+pke = {git = "https://github.com/boudinfl/pke.git"}
+spacy = "*"
 
 [dev-packages]
 mypy = "*"
@@ -19,4 +22,4 @@ django-stubs = "*"
 black = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.9"

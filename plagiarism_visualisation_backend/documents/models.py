@@ -8,11 +8,13 @@ class Document(models.Model):
     language = models.CharField(max_length=15)
     raw_text = models.TextField()
     authors = models.TextField(null=True, blank=True)
+    keywords = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
             "title": self.title,
             "doc-num": self.doc_num,
+            "authors": self.authors,
         }
 
     class Meta:
@@ -51,11 +53,13 @@ class SuspiciousDocument(models.Model):
     language = models.CharField(max_length=15)
     raw_text = models.TextField()
     authors = models.TextField(null=True, blank=True)
+    keywords = models.JSONField(null=True, blank=True)
 
     def serialize(self):
         return {
             "title": self.title,
             "doc-num": self.doc_num,
+            "authors": self.authors,
         }
 
     class Meta:

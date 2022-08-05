@@ -3,7 +3,7 @@ import json
 import fasttext
 import numpy as np
 
-from documents.models import Sentence
+from documents.models import Sentence, SuspiciousSentence
 
 from django.core.management.base import BaseCommand
 
@@ -11,12 +11,24 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     help = "Preprocess source sentences"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "type",
+            type=str,
+            choices=["source", "suspicious"],
+            help="Type of documents to be preprocessed.",
+        )
+
     def handle(self, *args, **options):
         curpath = os.path.dirname(__file__)
         model = fasttext.load_model(os.path.join(curpath, "../../wiki.en.bin"))
 
         for i in range(1, 11094):
-            sentences = Sentence.objects.filter(document__doc_num=i)
+            if options["type"] == "source":
+                sentences = Sentence.objects.filter(document__doc_num=i)
+            else:
+                sentences = SuspiciousSentence.objects.filter(document__doc_num=i)
+
             sent_vectors = []
             for sentence in sentences:
                 sent_vector = np.zeros(shape=(300,))
@@ -28,7 +40,7 @@ class Command(BaseCommand):
 
                 sent_vectors.append((sent_vector / sentence_length).tolist())
 
-            dir = f"/Volumes/WeiSin/source-sent-vectors/source-document{i}.json"
+            dir = f"/Volumes/WeiSin/{options['type']}-sent-vectors/{options['type']}-document{i}.json"
             with open(dir, "w") as f:
                 json.dump(sent_vectors, f)
 
