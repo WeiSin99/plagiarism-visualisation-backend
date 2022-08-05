@@ -15,7 +15,6 @@ django-cors-headers = "*"
 rake-nltk = "*"
 pke = {git = "https://github.com/boudinfl/pke.git"}
 spacy = "*"
-keybert = "*"
 
 [dev-packages]
 mypy = "*"
