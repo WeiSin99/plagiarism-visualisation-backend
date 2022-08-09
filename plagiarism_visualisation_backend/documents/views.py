@@ -1,3 +1,4 @@
+import os
 import json
 import numpy as np
 from nltk.tokenize import sent_tokenize
@@ -65,6 +66,43 @@ def source_document_detail(request, filenum):
         response["processedParagraphs"] = processed_paragraphs
 
     return JsonResponse(response)
+
+
+def corpus_view(request, corpus_num):
+    curpath = os.path.dirname(__file__)
+    path = "../../dataset-preprocessed"
+    with open(os.path.join(curpath, path, f"corpus{corpus_num}.json"), "r") as f:
+        corpus = json.load(f)
+
+    response = []
+    for source_doc_num in corpus["source_documents"]:
+        document = Document.objects.get(doc_num=source_doc_num)
+        sources = list(
+            filter(
+                lambda s: s in corpus["suspicious_documents"],
+                document.given_plagiarised_suspicious_document(),
+            )
+        )
+        response_dict = document.serialize()
+        response_dict["id"] = f"source-{source_doc_num}"
+        response_dict["score"] = document.plagiarism_score(sources)
+        response_dict["sources"] = [f"suspicious-{source}" for source in sources]
+        response.append(response_dict)
+
+    for suspicious_doc_num in corpus["suspicious_documents"]:
+        document = SuspiciousDocument.objects.get(doc_num=suspicious_doc_num)
+        sources = filter(
+            lambda s: s in corpus["source_documents"],
+            document.given_plagiarised_source_document(),
+        )
+        response_dict = document.serialize()
+        response_dict["id"] = f"suspicious-{suspicious_doc_num}"
+        response_dict["score"] = document.plagiarism_score()
+        response_dict["sources"] = [f"source-{source}" for source in sources]
+        response.append(response_dict)
+
+    response = sorted(response, key=lambda x: x["score"], reverse=True)
+    return JsonResponse({"response": response})
 
 
 def detail_analysis(request, filenum):
