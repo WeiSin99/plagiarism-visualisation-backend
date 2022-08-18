@@ -16,6 +16,7 @@ rake-nltk = "*"
 pke = {git = "https://github.com/boudinfl/pke.git"}
 spacy = "*"
 rank-bm25 = "*"
+gunicorn = "*"
 
 [dev-packages]
 mypy = "*"
