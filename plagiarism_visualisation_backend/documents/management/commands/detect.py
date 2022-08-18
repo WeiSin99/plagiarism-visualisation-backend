@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         all_sus_documents = (
             GivenPlagiarismCase.objects.filter(
-                obfuscation__in=["low", "none"], sus_document__doc_num__lt=3815
+                obfuscation__in=["low", "none"], sus_document__doc_num__lte=10000
             )
             .order_by("sus_document")
             .values_list("sus_document", flat=True)
