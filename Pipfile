@@ -17,6 +17,7 @@ pke = {git = "https://github.com/boudinfl/pke.git"}
 spacy = "*"
 rank-bm25 = "*"
 gunicorn = "*"
+whitenoise = "*"
 
 [dev-packages]
 mypy = "*"
