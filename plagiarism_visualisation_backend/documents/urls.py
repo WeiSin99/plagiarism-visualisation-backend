@@ -7,7 +7,7 @@ from .views import (
 )
 
 urlpatterns = [
-    path("detail/<int:filenum>", detail_analysis, name="detail_analysis"),
+    path("detail/<str:type>/<int:filenum>", detail_analysis, name="detail_analysis"),
     path("corpus/<int:corpus_num>", corpus_view, name="corpus_view"),
     path(
         "suspicious-document/<int:filenum>",

@@ -5,6 +5,7 @@ from .models import (
     SuspiciousDocument,
     SuspiciousSentence,
     GivenPlagiarismCase,
+    PlagiarismCase,
 )
 
 # Register your models here.
@@ -13,3 +14,4 @@ admin.site.register(Sentence)
 admin.site.register(SuspiciousDocument)
 admin.site.register(SuspiciousSentence)
 admin.site.register(GivenPlagiarismCase)
+admin.site.register(PlagiarismCase)

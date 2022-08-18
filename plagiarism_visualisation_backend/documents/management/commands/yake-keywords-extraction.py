@@ -17,6 +17,7 @@ def further_filter_candidates(extractor):
         if (
             v.surface_forms[0][0].lower() in extractor.stoplist
             or v.surface_forms[0][-1].lower() in extractor.stoplist
+            or not v.surface_forms[0][0].isalnum()
             or len(v.surface_forms[0][0]) < 3
             or len(v.surface_forms[0][-1]) < 3
         ):
