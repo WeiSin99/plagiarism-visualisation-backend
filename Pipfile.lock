@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "543387ec9238beceef41cf162b9268a5ce76a712c7405ff3e797f73ddfde4ddf"
+            "sha256": "52861c68633c3ac7d901f706d2b0ef1d3e25a2d82724e7e8858a2e182eaa724f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -113,6 +113,14 @@
                 "sha256:ee73a48c5a7e0f2acf6830ddc958ffafd7a614cfb79d14017a459bc7a7145ecd"
             ],
             "version": "==2.0.6"
+        },
+        "dj-database-url": {
+            "hashes": [
+                "sha256:ccf3e8718f75ddd147a1e212fca88eecdaa721759ee48e38b485481c77bca3dc",
+                "sha256:cd354a3b7a9136d78d64c17b2aec369e2ae5616fbca6bfbe435ef15bb372ce39"
+            ],
+            "index": "pypi",
+            "version": "==1.0.0"
         },
         "django": {
             "hashes": [
@@ -942,7 +950,7 @@
                 "sha256:939de3e7a6161af0c887ef91b7d41a53e7c5a1ca976325f429cb46ea9bc30ecc",
                 "sha256:de526c12914f0c550d15924c62d72abc48d6fe7364aa87328337a31007fe8a4f"
             ],
-            "markers": "python_full_version < '3.11.0a7'",
+            "markers": "python_version >= '3.7'",
             "version": "==2.0.1"
         },
         "types-pytz": {

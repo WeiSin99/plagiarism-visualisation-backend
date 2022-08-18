@@ -18,6 +18,7 @@ spacy = "*"
 rank-bm25 = "*"
 gunicorn = "*"
 whitenoise = "*"
+dj-database-url = "*"
 
 [dev-packages]
 mypy = "*"
