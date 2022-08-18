@@ -15,6 +15,7 @@ django-cors-headers = "*"
 rake-nltk = "*"
 pke = {git = "https://github.com/boudinfl/pke.git"}
 spacy = "*"
+rank-bm25 = "*"
 
 [dev-packages]
 mypy = "*"

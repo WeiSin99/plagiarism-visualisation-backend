@@ -1,58 +1,12 @@
-from .models import SuspiciousDocument, Document
+from .models import SuspiciousDocument, Document, PlagiarismCase
 
 
-def assign_sentence_number(paragraph_reference, db_sentences, type, doc_num):
-    processed_paragraphs = []
-    sentence_number = 0
-    for paragraph in paragraph_reference:
-        processed_paragraph = []
-        for sentence in paragraph:
-            # quick fix for edge cases
-            if type == "source" and doc_num == 5915 and sentence.strip() == ".  .  .":
-                sentence = ".  ."
-            if (
-                type == "source"
-                and doc_num == 5915
-                and sentence.strip()
-                == '"Not by multiplying clothes shall you make your body sound and healthy, but rather by discarding\nthem .  .  .'
-            ):
-                sentence = '"Not by multiplying clothes shall you make your body sound and healthy, but rather by discarding\nthem .'
-
-            if (
-                sentence == db_sentences[sentence_number]["rawText"]
-                or db_sentences[sentence_number]["rawText"] in sentence
-            ):
-                processed_paragraph.append(
-                    {"number": sentence_number, "rawText": sentence}
-                )
-                sentence_number += 1
-            elif sentence.strip() in db_sentences[sentence_number]["rawText"]:
-                processed_paragraph.append(
-                    {"number": sentence_number, "rawText": sentence}
-                )
-            else:
-                sentence_number += 1
-                # print(sentence_number)
-                # print(sentence.strip())
-                # print("")
-                while not (
-                    sentence.strip() in db_sentences[sentence_number]["rawText"]
-                    or db_sentences[sentence_number]["rawText"] in sentence
-                ):
-                    sentence_number += 1
-
-                processed_paragraph.append(
-                    {"number": sentence_number, "rawText": sentence}
-                )
-                if (
-                    sentence == db_sentences[sentence_number]["rawText"]
-                    or db_sentences[sentence_number]["rawText"] in sentence
-                ):
-                    sentence_number += 1
-
-        processed_paragraphs.append(processed_paragraph)
-
-    return processed_paragraphs
+def intersection(start1, end1, start2, end2):
+    intersection = range(
+        max(start1, start2),
+        min(end1, end2) + 1,
+    )
+    return list(intersection)
 
 
 def merge_sentences(arr, window=2, key="suspicious_sentence_number"):
@@ -87,23 +41,20 @@ def merge_sentences(arr, window=2, key="suspicious_sentence_number"):
     return merge_arr, merge_at
 
 
-def merge_source_sentences(arr, merge_idx, window=2):
-    merged_case = []
-    for idx in merge_idx:
-        merged_case.append(arr[idx[0] : idx[1]])
-
-    merged_sentences = []
-    for case in merged_case:
-        sentence = sorted(case, key=lambda x: x["source_sentence_number"])
-        merged_sentence, _ = merge_sentences(
-            sentence, window, key="source_sentence_number"
-        )
-        merged_sentences.append(merged_sentence)
-
-    return merged_sentences
+def filter_sentence(all_sus_sentences, sentence_number):
+    sents_word_len = len(
+        all_sus_sentences.get(number=sentence_number).preprocessed_text.split(",")
+    )
+    return sents_word_len
 
 
 def merge_cases(sus_doc_num, potential_plagiarised_sents, window=2):
+    all_sus_sentences = SuspiciousDocument.objects.get(doc_num=sus_doc_num).sentences
+    potential_plagiarised_sents = [
+        sent
+        for sent in potential_plagiarised_sents
+        if filter_sentence(all_sus_sentences, sent["suspicious_sentence_number"]) > 2
+    ]
     if len(potential_plagiarised_sents) == 0:
         return []
 
@@ -115,6 +66,7 @@ def merge_cases(sus_doc_num, potential_plagiarised_sents, window=2):
         merged_source_parts, _ = merge_sentences(
             sorted_part, window, key="source_sentence_number"
         )
+        # merged_cases = merged_source_parts
         for source_part in merged_source_parts:
             this_start = min(
                 source_part, key=lambda x: x["suspicious_sentence_number"]
@@ -176,6 +128,8 @@ def merge_cases(sus_doc_num, potential_plagiarised_sents, window=2):
                 }
             )
 
+    merged_cases = sorted(merged_cases, key=lambda x: x["thisStart"])
+    merged_cases = list(filter(lambda c: c["thisNumWords"] != 1, merged_cases))
     return merged_cases
 
 
@@ -211,3 +165,51 @@ def overlapped_range(case, merged_cases):
             return i, list(intersection)
 
     return -1, []
+
+
+def create_plagiarism_case(
+    sus_doc_num,
+    sus_start,
+    sus_end,
+    source_doc_num,
+    source_start,
+    source_end,
+    score,
+):
+    sus_doc = SuspiciousDocument.objects.get(doc_num=sus_doc_num)
+    sus_sentences = sus_doc.sentences.filter(number__gte=sus_start, number__lte=sus_end)
+    sus_len = sum([len(sus_sentence.raw_text) for sus_sentence in sus_sentences])
+    sus_word_len = sum(
+        [
+            len(sus_sentence.preprocessed_text.split(","))
+            for sus_sentence in sus_sentences
+        ]
+    )
+
+    source_doc = Document.objects.get(doc_num=source_doc_num)
+    source_sentences = source_doc.sentences.filter(
+        number__gte=source_start, number__lte=source_end
+    )
+    source_len = sum(
+        [len(source_sentence.raw_text) for source_sentence in source_sentences]
+    )
+    source_word_len = sum(
+        [
+            len(source_sentence.preprocessed_text.split(","))
+            for source_sentence in source_sentences
+        ]
+    )
+
+    PlagiarismCase.objects.create(
+        sus_document=sus_doc,
+        sus_start_sentence=sus_start,
+        sus_end_sentence=sus_end,
+        sus_length=sus_len,
+        sus_word_len=sus_word_len,
+        source_document=source_doc,
+        source_start_sentence=source_start,
+        source_end_sentence=source_end,
+        source_length=source_len,
+        source_word_len=source_word_len,
+        score=score,
+    )

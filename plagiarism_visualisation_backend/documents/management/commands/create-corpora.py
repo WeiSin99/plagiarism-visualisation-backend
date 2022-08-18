@@ -20,7 +20,7 @@ def all_plagiarised_document(exclude_list):
     plagiarised_documents = []
     for doc_num in suspicious_documents:
         sus_doc = SuspiciousDocument.objects.get(doc_num=doc_num)
-        if sus_doc.given_plagiarism_cases.count() > 0:
+        if sus_doc.detected_plagiarism_cases().count() > 0:
             plagiarised_documents.append(doc_num)
 
     return plagiarised_documents
@@ -84,7 +84,15 @@ class Command(BaseCommand):
                 suspicious_documents.append(suspicious_document)
 
                 sus_doc = SuspiciousDocument.objects.get(doc_num=suspicious_document)
-                all_sources = sus_doc.given_plagiarised_source_document()
+                all_source_ids = (
+                    sus_doc.detected_plagiarism_cases()
+                    .order_by("source_document")
+                    .values_list("source_document", flat=True)
+                    .distinct()
+                )
+                all_sources = Document.objects.filter(
+                    id__in=all_source_ids
+                ).values_list("doc_num", flat=True)
 
                 while True:
                     # get one of its source
@@ -94,7 +102,15 @@ class Command(BaseCommand):
 
                     source_documents.append(source_document)
                     source_doc = Document.objects.get(doc_num=source_document)
-                    all_sus = source_doc.given_plagiarised_suspicious_document()
+                    all_sus_ids = (
+                        source_doc.detected_plagiarism_cases()
+                        .order_by("sus_document")
+                        .values_list("sus_document", flat=True)
+                        .distinct()
+                    )
+                    all_sus = SuspiciousDocument.objects.filter(
+                        id__in=all_sus_ids
+                    ).values_list("doc_num", flat=True)
 
                     while probability_generator(options["beta"]):
                         # get another plagiarised suspicious document that copy from the source if there is
