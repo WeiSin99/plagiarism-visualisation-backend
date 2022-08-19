@@ -54,7 +54,7 @@ def corpus_view(request, corpus_num):
             )
             response_dict = document.serialize()
             response_dict["id"] = f"source-{source_doc_num}"
-            response_dict["score"] = document.plagiarism_score()
+            response_dict["score"] = document.plagiarism_score
             response_dict["sources"] = [f"suspicious-{source}" for source in sources]
             response.append(response_dict)
 
@@ -66,7 +66,7 @@ def corpus_view(request, corpus_num):
             )
             response_dict = document.serialize()
             response_dict["id"] = f"suspicious-{suspicious_doc_num}"
-            response_dict["score"] = document.plagiarism_score()
+            response_dict["score"] = document.plagiarism_score
             response_dict["sources"] = [f"source-{source}" for source in sources]
             response.append(response_dict)
 
@@ -87,7 +87,7 @@ def detail_analysis(request, type, filenum):
 
         doc_len = len(doc.raw_text)
         response = doc.serialize()
-        response["plagiarismScore"] = doc.plagiarism_score()
+        response["plagiarismScore"] = doc.plagiarism_score
         response["charLength"] = doc_len
 
         # post filtering

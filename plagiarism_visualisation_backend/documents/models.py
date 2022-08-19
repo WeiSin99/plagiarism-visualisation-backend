@@ -41,15 +41,16 @@ class Document(models.Model):
     raw_text = models.TextField()
     authors = models.TextField(null=True, blank=True)
     keywords = models.JSONField(null=True, blank=True)
+    plagiarism_score = models.FloatField(null=True, blank=True)
 
-    def plagiarism_score(self):
-        plagiarism_cases = self.detected_plagiarism_cases().values_list(
-            "source_length", flat=True
-        )
-
-        plagiarised_part_length = sum(plagiarism_cases)
-        total_length = len(self.raw_text)
-        return plagiarised_part_length / total_length
+    # def plagiarism_score(self):
+    #     plagiarism_cases = self.detected_plagiarism_cases().values_list(
+    #         "source_length", flat=True
+    #     )
+    #
+    #     plagiarised_part_length = sum(plagiarism_cases)
+    #     total_length = len(self.raw_text)
+    #     return plagiarised_part_length / total_length
 
     def detected_plagiarism_cases(self):
         plagiarism_cases = self.plagiarism_cases.all()
@@ -110,15 +111,16 @@ class SuspiciousDocument(models.Model):
     raw_text = models.TextField()
     authors = models.TextField(null=True, blank=True)
     keywords = models.JSONField(null=True, blank=True)
+    plagiarism_score = models.FloatField(null=True, blank=True)
 
-    def plagiarism_score(self):
-        plagiarism_cases = self.detected_plagiarism_cases().values_list(
-            "sus_length", flat=True
-        )
-
-        plagiarised_part_length = sum(plagiarism_cases)
-        total_length = len(self.raw_text)
-        return plagiarised_part_length / total_length
+    # def plagiarism_score(self):
+    #     plagiarism_cases = self.detected_plagiarism_cases().values_list(
+    #         "sus_length", flat=True
+    #     )
+    #
+    #     plagiarised_part_length = sum(plagiarism_cases)
+    #     total_length = len(self.raw_text)
+    #     return plagiarised_part_length / total_length
 
     def detected_plagiarism_cases(self):
         plagiarism_cases = self.plagiarism_cases.all()
