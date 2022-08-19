@@ -24,13 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-8yidi2p8s%+x+%rf+1w5wd!o8xzj1u7(@t@o56_jja11#5fs+)"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
     "http://localhost:8000",
-    "https://v2.alphainvestinggroup.com",
+    "https://viz-assisted-pd.netlify.app",
 )
 
 
