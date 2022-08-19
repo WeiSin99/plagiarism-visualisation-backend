@@ -39,7 +39,7 @@ def corpus_view(request, corpus_num):
     response = []
     if request.method == "GET":
         curpath = os.path.dirname(__file__)
-        path = "../../dataset-preprocessed"
+        path = "./corpora"
         with open(os.path.join(curpath, path, f"corpus{corpus_num}.json"), "r") as f:
             corpus = json.load(f)
 
