@@ -1,14 +1,33 @@
+import os
 import json
+import pickle
 import random
+import numpy as np
+from nltk import pos_tag
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
 from django.db import models
+
+
+def get_wordnet_pos(word):
+    """Map POS tag to first character lemmatize() accepts"""
+    tag = pos_tag([word])[0][1][0].upper()
+    tag_dict = {
+        "J": wordnet.ADJ,
+        "N": wordnet.NOUN,
+        "V": wordnet.VERB,
+        "R": wordnet.ADV,
+    }
+
+    return tag_dict.get(tag, wordnet.NOUN)
 
 
 def post_filter_plag_cases(plagCases):
     filtered_cases_ids = []
     for case in plagCases:
-        word_difference_threshold = 0.2
+        word_difference_threshold = 0.5
         single_sentence_score_threshold = 0.975
-        minimum_sentence_word_len = 4
+        minimum_sentence_word_len = 3
 
         if (
             case.sus_word_len <= minimum_sentence_word_len
@@ -42,15 +61,6 @@ class Document(models.Model):
     authors = models.TextField(null=True, blank=True)
     keywords = models.JSONField(null=True, blank=True)
     plagiarism_score = models.FloatField(null=True, blank=True)
-
-    # def plagiarism_score(self):
-    #     plagiarism_cases = self.detected_plagiarism_cases().values_list(
-    #         "source_length", flat=True
-    #     )
-    #
-    #     plagiarised_part_length = sum(plagiarism_cases)
-    #     total_length = len(self.raw_text)
-    #     return plagiarised_part_length / total_length
 
     def detected_plagiarism_cases(self):
         plagiarism_cases = self.plagiarism_cases.all()
@@ -113,33 +123,47 @@ class SuspiciousDocument(models.Model):
     keywords = models.JSONField(null=True, blank=True)
     plagiarism_score = models.FloatField(null=True, blank=True)
 
-    # def plagiarism_score(self):
-    #     plagiarism_cases = self.detected_plagiarism_cases().values_list(
-    #         "sus_length", flat=True
-    #     )
-    #
-    #     plagiarised_part_length = sum(plagiarism_cases)
-    #     total_length = len(self.raw_text)
-    #     return plagiarised_part_length / total_length
-
     def detected_plagiarism_cases(self):
         plagiarism_cases = self.plagiarism_cases.all()
         return post_filter_plag_cases(plagiarism_cases).order_by("sus_start_sentence")
 
     def get_candidates(self):
-        suspicious_keywords = json.loads(self.keywords)
-        documents = Document.objects.filter(language="en").values_list(
+        curpath = os.path.dirname(__file__)
+        dataset_path = "../../dataset-preprocessed"
+        with open(
+            os.path.join(curpath, dataset_path, "bm25_plus.pickle"), "rb"
+        ) as model_file:
+            bm25 = pickle.load(model_file)
+
+        keywords = json.loads(self.keywords)
+        english_doc_nums = Document.objects.filter(language="en").values_list(
             "doc_num", flat=True
         )
 
-        candidates = []
-        for doc_num in documents:
-            document = Document.objects.get(doc_num=doc_num)
-            source_keywords = json.loads(document.keywords)
-            if len(set(source_keywords).intersection(set(suspicious_keywords))) > 1:
-                candidates.append(doc_num)
+        all_candidates = {}
+        lemmatizer = WordNetLemmatizer()
+        for keyword in keywords:
+            processed_keywords = [
+                lemmatizer.lemmatize(word, get_wordnet_pos(word)) for word in keyword
+            ]
 
-        return candidates
+            doc_scores = bm25.get_scores(processed_keywords)
+            top_indices = np.argsort(doc_scores)[::-1]
+
+            for index in top_indices[0:10]:
+                english_doc_num = english_doc_nums[int(index)]
+                if all_candidates.get(english_doc_num):
+                    if doc_scores[int(index)] > all_candidates[english_doc_num]:
+                        all_candidates[english_doc_num] = doc_scores[int(index)]
+                else:
+                    all_candidates[english_doc_num] = doc_scores[int(index)]
+
+        return [
+            k
+            for k, _ in sorted(
+                all_candidates.items(), key=lambda item: item[1], reverse=True
+            )
+        ][0:300]
 
     def given_plagiarised_source_document(self):
         source_ids = (

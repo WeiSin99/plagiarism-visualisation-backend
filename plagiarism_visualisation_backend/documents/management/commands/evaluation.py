@@ -1,3 +1,4 @@
+import math
 from documents.models import (
     Document,
     SuspiciousDocument,
@@ -49,6 +50,7 @@ def recall_precision(given_cases, detected_cases):
     precision_num_of_cases = detected_cases.count()
     recall_per_case = []
     precision_per_case = []
+    detections_per_case = []
 
     for given_case in given_cases:
         sus_doc_num = given_case.sus_document.doc_num
@@ -57,6 +59,7 @@ def recall_precision(given_cases, detected_cases):
         detected_file_case = detected_cases.filter(
             sus_document__doc_num=sus_doc_num, source_document__doc_num=source_doc_num
         )
+        num_detections = 0
         for detected_case in detected_file_case:
             sus_intersection = intersection(
                 given_case.sus_start_sentence,
@@ -70,17 +73,32 @@ def recall_precision(given_cases, detected_cases):
                 detected_case.source_start_sentence,
                 detected_case.source_end_sentence,
             )
+            if len(sus_intersection) > 0 and len(source_intersection) > 0:
+                num_detections += 1
             if len(sus_intersection) > 0 or len(source_intersection) > 0:
                 case_recall, case_precision = case_recall_precision(
                     sus_intersection, source_intersection, given_case, detected_case
                 )
                 recall_per_case.append(case_recall)
                 precision_per_case.append(case_precision)
+            detections_per_case.append(num_detections)
 
+    gdetected_cases = sum((num_dets > 0 for num_dets in detections_per_case))
+    if gdetected_cases == 0:
+        granularity = 1
+    else:
+        granularity = sum(detections_per_case) / gdetected_cases
     return (
         sum(recall_per_case) / recall_num_of_cases,
         sum(precision_per_case) / precision_num_of_cases,
+        granularity,
     )
+
+
+def plagdet(rec, prec, gran):
+    if (rec == 0 and prec == 0) or prec < 0 or rec < 0 or gran < 1:
+        return 0
+    return ((2 * rec * prec) / (rec + prec)) / math.log(1 + gran, 2)
 
 
 class Command(BaseCommand):
@@ -88,7 +106,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         sus_doc_start = 9998
-        sus_doc_end = 4
+        sus_doc_end = 1
         given_plagiarism_cases = GivenPlagiarismCase.objects.filter(
             obfuscation__in=["low", "none"],
             sus_document__doc_num__lte=sus_doc_start,
@@ -100,12 +118,16 @@ class Command(BaseCommand):
         )
 
         detected_plagiarism_cases = post_filter_plag_cases(detected_plagiarism_cases)
+        print("done post filtering")
 
-        recall_score, precision_score = recall_precision(
+        recall_score, precision_score, granularity = recall_precision(
             given_plagiarism_cases, detected_plagiarism_cases
         )
         f1 = 2 * (recall_score * precision_score) / (recall_score + precision_score)
+        plagdet_score = plagdet(recall_score, precision_score, granularity)
 
         print(recall_score)
         print(precision_score)
         print(f1)
+        print(granularity)
+        print(plagdet_score)
